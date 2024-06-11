@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    &nbsp;
+    &nbsp;
+
+    &nbsp;
+    <title>Ahorro e Inversión</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #621132; /* Cambia este valor por el color de fondo que desees */
+            color: white; /* Color blanco para todo el texto */
+            font-family: Arial, sans-serif; /* Cambia la fuente según tus preferencias */
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            text-align: center;
+        }
+
+        .column {
+            flex: 1;
+            padding: 10px;
+        }
+
+        #inicio {
+            display: block;
+        }
+
+        #juego {
+            display: none;
+        }
+
+        h1 {
+            font-size: 1em; /* Tamaño de letra para los encabezados */
+        }
+
+        h2 {
+            font-size: 1.5em; /* Tamaño de letra para los subtítulos */
+        }
+
+        p, label, button {
+            font-size: .9em; /* Tamaño de letra para párrafos, etiquetas y botones */
+        }
+
+        input {
+            font-size: 1.2em; /* Tamaño de letra para los campos de entrada */
+        }
+ 
+
+    </style>
+</head>
+<body>
+    <div class="container" id="inicio">
+        <div class="column">
+            <h1>Configurar Juego</h1>
+            <label for="montoInicial">Indica la cantidad con la que comenzarás:</label>
+            <input type="number" id="montoInicial" value="1000" />
+            <button onclick="iniciarJuego()">Iniciar Juego</button>
+        </div>
+    </div>
+    <div class="container" id="juego">
+        <div class="column">
+            <h1>Ahorro e Inversión</h1>
+            <p>¡Bienvenido! En este juego, tomarás decisiones sobre ahorro e inversión.</p>
+            <p id="saldo">Tu saldo actual es: $0</p>
+            <canvas id="inversionesChart" width="200" height="100"></canvas>
+            <canvas id="ahorroChart" width="200" height="100"></canvas>
+        </div>
+        <div class="column">
+            <button onclick="invertir('acciones')">Invertir en acciones ($100)</button>
+            <button onclick="invertir('bienes_raices')">Invertir en bienes raíces ($200)</button>
+            <button onclick="invertir('bonos')">Invertir en bonos ($150)</button>
+            <button onclick="ahorrar()">Ahorrar $100</button>
+        </div>
+        <div class="column">
+            <h2>Historial de Transacciones</h2>
+            <div id="historial"></div>
+        </div>
+    </div>
+
+    <script>
+        let saldo = 0;
+        let inversiones = {
+            acciones: 0,
+            bienes_raices: 0,
+            bonos: 0
+        };
+
+        let transacciones = [];
+
+        function iniciarJuego() {
+            const montoInicial = parseFloat(document.getElementById('montoInicial').value);
+            if (!isNaN(montoInicial) && montoInicial > 0) {
+                saldo = montoInicial;
+                document.getElementById('saldo').textContent = `Tu saldo actual es: $${saldo}`;
+                document.getElementById('inicio').style.display = 'none';
+                document.getElementById('juego').style.display = 'flex';
+                actualizarAhorro();
+            } else {
+                alert("Por favor, ingresa una cantidad válida.");
+            }
+        }
+
+        let inversionesChart = new Chart(document.getElementById('inversionesChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Acciones', 'Bienes Raíces', 'Bonos'],
+                datasets: [{
+                    label: 'Inversiones',
+                    data: [0, 0, 0],
+                    backgroundColor: ['#ff6384', '#36a2eb', '#ffce56']
+                }]
+            },
+            options: {
+                legend: { display: false },
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+
+        let ahorroChart = new Chart(document.getElementById('ahorroChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Inversiones', 'Ahorro'],
+                datasets: [{
+                    data: [0, saldo],
+                    backgroundColor: ['#ff6384', '#36a2eb']
+                }]
+            },
+            options: {
+                legend: { display: false },
+            }
+        });
+
+        function invertir(tipo) {
+            let cantidad = 0;
+            switch (tipo) {
+                case 'acciones':
+                    cantidad = 100;
+                    break;
+                case 'bienes_raices':
+                    cantidad = 200;
+                    break;
+                case 'bonos':
+                    cantidad = 150;
+                    break;
+                default:
+                    cantidad = 0;
+            }
+
+            if (saldo >= cantidad) {
+                saldo -= cantidad;
+                inversiones[tipo] += cantidad;
+                actualizarInversiones();
+                actualizarAhorro();
+                actualizarSaldo();
+                
+                // Agregar la transacción al historial
+                let tipoTransaccion = tipo.replace('_', ' ');
+                transacciones.unshift({ tipo: tipoTransaccion, cantidad: cantidad });
+                if (transacciones.length > 5) {
+                    transacciones.pop();
+                }
+                actualizarHistorial();
+            } else {
+                alert("No tienes suficiente dinero para invertir.");
+            }
+        }
+
+        function ahorrar() {
+            if (saldo >= 100) {
+                saldo -= 100;
+                actualizarAhorro();
+                actualizarSaldo();
+                
+                // Agregar la transacción al historial
+                transacciones.unshift({ tipo: 'Ahorrar', cantidad: 100 });
+                if (transacciones.length > 5) {
+                    transacciones.pop();
+                }
+                actualizarHistorial();
+            } else {
+                alert("No tienes suficiente dinero para ahorrar.");
+            }
+        }
+
+        function actualizarInversiones() {
+            inversionesChart.data.datasets[0].data = [inversiones.acciones, inversiones.bienes_raices, inversiones.bonos];
+            inversionesChart.update();
+        }
+
+        function actualizarAhorro() {
+            ahorroChart.data.datasets[0].data = [Object.values(inversiones).reduce((acc, curr) => acc + curr, 0), saldo];
+            ahorroChart.update();
+        }
+
+        function actualizarSaldo() {
+            document.getElementById("saldo").textContent = `Tu saldo actual es: $${saldo}`;
+        }
+
+        function actualizarHistorial() {
+            let historialHTML = '';
+            transacciones.forEach(transaccion => {
+                historialHTML += `<p class="transaccion">-${transaccion.tipo}: $${transaccion.cantidad}</p>`;
+            });
+            document.getElementById('historial').innerHTML = historialHTML;
+        }
+    </script>
+</body>
+</html>
